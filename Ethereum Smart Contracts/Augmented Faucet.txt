@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: GPL-3.0
+// Version of Solidity compiler this program was written for 
+pragma solidity ^0.8.7;
+
+contract AugmentedFaucet {
+    
+    address owner;
+
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
+
+    
+    // set user list
+    uint public max_users = 4;
+    address[] Users;     
+    uint public count_users;
+    bool new_user;
+    
+    // Process new withdraw request, new user as default
+    function withdraw(uint withdraw_amount) public {
+        count_users = Users.length;
+        new_user = true;
+        require(withdraw_amount <= 0.1 ether);
+        
+        // check user list
+        for (uint i = 0; i < count_users; i++) {
+            if (Users[i] == msg.sender) {
+                new_user = false;
+                
+            // allow registered user to withdraw 
+            payable(msg.sender).transfer(withdraw_amount);
+            }
+        }    
+        if (count_users < max_users && new_user == true) {        
+            // add new user
+            Users.push(msg.sender);
+            count_users += 1;
+            
+            // allow newly registered user to withdraw 
+            payable(msg.sender).transfer(withdraw_amount);
+        }
+    }    
+    
+    // Accept any incoming amount
+    receive () external payable {}
+    
+    // Only owner can call this function
+    function ResetUsers() public {
+        require(msg.sender == owner);
+        while (Users.length > 0) {
+            Users.pop();                     
+        }
+        count_users = Users.length;        // reset count_users
+    }
+}
+
+Transaction hash: 0xc2122c84a74fe01285d5e4348d963adf5aa292d1d2d5e8573363af0e431ecc2e

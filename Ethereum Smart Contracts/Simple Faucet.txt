@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-3.0 
+// Version of Solidity compiler this program was written for 
+pragma solidity ^0.8.7;
+
+contract SimpleFaucet {
+    
+    // Set max_amount
+    uint public max_amount = 0.1 ether;
+    
+    // Give out coin to anyone who asks
+    function withdraw(uint withdraw_amount) public {
+
+        // Limit withdrawal amount
+        require(withdraw_amount <= max_amount);
+        require(address(this).balance >= withdraw_amount,
+                        "Insufficient croissants in faucet for withdrawal request.");
+        
+        // Send to the address that requested it
+        payable(msg.sender).transfer(withdraw_amount);
+    }
+    // Accept any incoming amount
+    receive () external payable {}
+}
+
+Transaction hash: 0xfe2c68bc5d09e3773823103fbbc1e7463ecd956088113856c4b5ea616ae7678e

@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: GPL-3.0
+// Version of Solidity compiler this program was written for 
+pragma solidity ^0.4.26;
+
+contract Owned {
+	address owner;
+
+	// Contract constructor: set owner
+	constructor() public {
+		owner = msg.sender;
+	}
+
+	// Access control modifier
+	modifier onlyOwner {
+	    require(msg.sender == owner,
+                "Only the contract owner can call this function");
+        _;
+	}
+}
+                
+contract VickreyAuction is Owned {
+    // Auction Parameters
+    address seller;
+    uint public bidders;
+    uint public max_bidders = 4;
+    
+    uint startingPrice = 0.1 ether;      // can be set public
+    bool public OpenToBid;               // bidding ends when count_bidders hits the limit
+    bool public OpenToReveal;
+    bool public AuctionInProgress;
+    
+    // these values are set when the auctioneer determines the winner
+    address highBidder;
+    uint highBid;
+    uint secondBid;
+    mapping(address => bool) public revealedList;
+    address public Winner;
+    uint public WinningBid;
+
+    // Start new Vickrey Auction
+    function NewVickreyAuction() public onlyOwner {
+        bidders = 0;
+        OpenToBid = true;                          
+        OpenToReveal = false;                     
+        AuctionInProgress = true;                 
+
+        seller = msg.sender;
+
+        highBidder = seller;           
+        highBid = startingPrice;
+        secondBid = startingPrice;
+        
+        // as only revealed bidders can withdraw
+        revealedList[seller] = true;    
+    }
+
+    mapping(address => uint) balanceOf;
+    mapping(address => bytes32) hashedBidOf;
+    
+    // Start bidding
+    function bid(bytes32 hash) public payable {
+        require(msg.sender != seller);
+        require(bidders < max_bidders);
+        require(msg.value >= startingPrice);
+        
+        hashedBidOf[msg.sender] = hash;
+        balanceOf[msg.sender] += msg.value;
+        bidders += 1; 
+    
+        // update bidding progress
+            
+        if (bidders == max_bidders) {
+            OpenToBid = false;
+            OpenToReveal = true;
+        }
+    }
+ 
+    
+    // Find winner
+    function DeclareWinner() public onlyOwner returns (address, uint) {
+        Winner = highBidder;
+        WinningBid = highBid;
+        AuctionInProgress = false;
+        return (Winner, WinningBid);
+    }
+    
+    function BidRefund() public {
+        require(AuctionInProgress == false);
+        require(revealedList[msg.sender]);              // only when bidder has revealed their bid
+    
+        uint256 amount = balanceOf[msg.sender];
+        balanceOf[msg.sender] = 0;
+        msg.sender.transfer(amount);
+    }
+}
